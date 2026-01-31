@@ -1,8 +1,14 @@
 const { default: axios } = require("axios");
 const { sendSlackNotification } = require("../services/SlackService");
 const { HttpError } = require("../util/HttpError");
+const { systemPrompt } = require("../ai/SystemPrompt");
+const {
+  getFileCommitHistory,
+  getTopCommitsWithDiffs,
+} = require("../services/GitHubService");
 
 const BASE_URL = "http://localhost:3000/api"; // TODO: Change to the actual URL
+const app_name = "broken_app";
 
 /**
  * Handles an incident report with a stacktrace.
@@ -17,37 +23,106 @@ async function processIncident(stacktrace) {
     throw new HttpError(400, "Missing required field: stacktrace");
   }
 
-  const trace = typeof stacktrace === "string" ? stacktrace : String(stacktrace);
+  const trace =
+    typeof stacktrace === "string" ? stacktrace : String(stacktrace);
   console.log("[Incident] Stacktrace received:\n", trace);
 
   // 1. Figure out what part of the code is causing the incident fromn the stacktrace
   // 2. Fetch the past commit history for the whole project (for now)
   // 3. Fetch the top n committers with the most commit impact for the file
   // 4. Summarize the crash reason with Claude
-  const crashReasonResponse = await axios.post(`${BASE_URL}/chat`,
-    { prompt: getPromptForCrashReason(trace) });
-  const crashReason = crashReasonResponse.data.response;
-  // 5. Summarize the commit history with Claude
-  // 6. Send the summary to Slack
+  const crashReasonResponse = await axios.post(`${BASE_URL}/chat`, {
+    prompt: getPromptForCrashReason(trace),
+  });
 
-  const slackReport = generateSlackReport(crashReason, "empty", "empty");
+  // - "errorType": The type of error (e.g., ReferenceError, TypeError).
+  // - "errorMessage": The error message.
+  // - "files": An array of file names with full paths involved in the error.
+  // - "methods": An array of method names involved in the error.
+
+  const crashReason = crashReasonResponse.data.response;
+  console.log("[Incident] Crash reason response:\n", crashReason);
+
+  // Clean up the response if it contains markdown code blocks
+  let cleanReason = crashReason;
+  const jsonMatch =
+    cleanReason.match(/```json\n([\s\S]*?)\n```/) ||
+    cleanReason.match(/```([\s\S]*?)```/);
+  if (jsonMatch) {
+    cleanReason = jsonMatch[1];
+  }
+
+  // Attempt to parse the JSON
+  let crashReasonData;
+  try {
+    crashReasonData = JSON.parse(cleanReason);
+  } catch (error) {
+    console.error(
+      "Failed to parse JSON directly. Attempting to sanitize control characters...",
+      error.message,
+    );
+    const sanitized = cleanReason.replace(/[\u0000-\u001F]+/g, (match) => {
+      if (match === "\n") return match;
+      return "";
+    });
+
+    try {
+      crashReasonData = JSON.parse(sanitized);
+    } catch (e2) {
+      // If standard parse fails, we can't do much without a better library.
+      console.error("Critical JSON parse error. Raw response:", crashReason);
+      throw new HttpError(500, "Failed to parse AI response: " + error.message);
+    }
+  }
+
+  // 5. Summarize the commit history with Claude
+  const slackReport = await generateSlackReport(crashReasonData);
   sendSlackNotification(slackReport);
-  return { success: true, message: "Incident processed" };
+  return {
+    success: true,
+    message: "Incident processed",
+  };
 }
 
 function getPromptForCrashReason(stacktrace) {
-  return `
-  You are a helpful assistant that analyzes stack traces and provides a summary of the crash reason.
-  Be concise but detailed.
+  return `${systemPrompt}
   The stack trace is: ${stacktrace}
   `;
 }
 
-function generateSlackReport(crashReason, commitHistory, topCommitters) {
+function getFileNames(files) {
+  return files.map((file) => {
+    const fileName = file.replace(
+      `/Users/moony/fourth_year/ICHACK/${app_name}/`,
+      "",
+    );
+    return fileName;
+  });
+}
+
+async function generateSlackReport(crashReasonData) {
+  const summary = crashReasonData.summary || "No summary provided";
+  const errorType = crashReasonData.errorType || "Unknown error";
+  const errorMessage = crashReasonData.errorMessage || "Unknown error message";
+
+  const files = getFileNames(crashReasonData.files) || [];
+  const commitHistory = [];
+  for (const file of files) {
+    const history = await getTopCommitsWithDiffs(
+      "yejin-angela-moon",
+      "ichack26",
+      file,
+    );
+    commitHistory.push(history);
+  }
+  // const commitHistoryOutput = commitHistory.flat();
+
+  console.log("[Incident] Crash reason analysis:\n", crashReasonData);
+
   return `
-  *Crash Reason*: ${crashReason}
-  *Commit History*: ${commitHistory}
-  *Top Committers*: ${topCommitters}
+  *Crash Reason*: ${summary}
+  *Crash Report*: ${crashReasonData.crashReport}
+  *Commit History*: ${JSON.stringify(commitHistory, null, 2)}
   `;
 }
 

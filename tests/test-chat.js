@@ -5,6 +5,8 @@
  * NOTE: Ensure the server is running on localhost:3000 before running this test.
  */
 
+const { exampleStackTrace, systemPrompt } = require("../src/ai/SystemPrompt");
+
 const axios = require("axios");
 
 const BASE_URL = "http://localhost:3000/api";
@@ -45,24 +47,42 @@ async function runTests() {
   let failed = 0;
 
   // Test 1: Send a simple prompt
-  const success = await test("Send 'Hello' prompt to Claude", async () => {
-    const prompt = "Hello, are you working?";
-    const response = await axios.post(`${BASE_URL}/chat`, { prompt: prompt });
+  // const success = await test("Send 'Hello' prompt to Claude", async () => {
+  //   const prompt = "Hello, are you working?";
+  //   const response = await axios.post(`${BASE_URL}/chat`, { prompt: prompt });
 
-    if (response.status !== 200) {
-      throw new Error(`Expected status 200 but got ${response.status}`);
-    }
+  //   if (response.status !== 200) {
+  //     throw new Error(`Expected status 200 but got ${response.status}`);
+  //   }
 
-    if (!response.data || !response.data.response) {
-      throw new Error("Response body missing 'response' field");
-    }
+  //   if (!response.data || !response.data.response) {
+  //     throw new Error("Response body missing 'response' field");
+  //   }
 
-    console.log(
-      `  Response from AI: ${response.data.response.substring(0, 50)}...`,
-    );
-  });
+  //   console.log(`  Response from AI: ${response.data.response}...`);
+  // });
 
-  if (success) passed++;
+  // if (success) passed++;
+  // else failed++;
+
+  // Test 2: Send a stack trace with system prompt
+  const success2 =
+    await test("Analyze Stack Trace with System Prompt", async () => {
+      const prompt = `${systemPrompt}\n\nStack Trace:\n${exampleStackTrace}`;
+      const response = await axios.post(`${BASE_URL}/chat`, { prompt: prompt });
+
+      if (response.status !== 200) {
+        throw new Error(`Expected status 200 but got ${response.status}`);
+      }
+
+      if (!response.data || !response.data.response) {
+        throw new Error("Response body missing 'response' field");
+      }
+
+      console.log(`  Response from AI: ${response.data.response}...`);
+    });
+
+  if (success2) passed++;
   else failed++;
 
   log(

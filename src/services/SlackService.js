@@ -1,4 +1,4 @@
-const { IncomingWebhook } = require('@slack/webhook');
+const { IncomingWebhook } = require("@slack/webhook");
 
 const webhook = new IncomingWebhook(process.env.SLACK_WEBHOOK_URL);
 
@@ -7,9 +7,9 @@ async function sendSlackNotification(message) {
     text: `New notification`,
     blocks: [
       {
-        type: 'section',
+        type: "section",
         text: {
-          type: 'mrkdwn',
+          type: "mrkdwn",
           text: message,
         },
       },
