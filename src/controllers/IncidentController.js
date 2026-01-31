@@ -1,5 +1,8 @@
+const { default: axios } = require("axios");
 const { sendSlackNotification } = require("../services/SlackService");
 const { HttpError } = require("../util/HttpError");
+
+const BASE_URL = "http://localhost:3000/api"; // TODO: Change to the actual URL
 
 /**
  * Handles an incident report with a stacktrace.
@@ -9,7 +12,7 @@ const { HttpError } = require("../util/HttpError");
  * @returns {{ success: boolean, message: string }}
  * @throws {HttpError} When stacktrace is missing
  */
-function processIncident(stacktrace) {
+async function processIncident(stacktrace) {
   if (stacktrace === undefined || stacktrace === null) {
     throw new HttpError(400, "Missing required field: stacktrace");
   }
@@ -21,11 +24,31 @@ function processIncident(stacktrace) {
   // 2. Fetch the past commit history for the whole project (for now)
   // 3. Fetch the top n committers with the most commit impact for the file
   // 4. Summarize the crash reason with Claude
+  const crashReasonResponse = await axios.post(`${BASE_URL}/chat`,
+    { prompt: getPromptForCrashReason(trace) });
+  const crashReason = crashReasonResponse.data.response;
   // 5. Summarize the commit history with Claude
   // 6. Send the summary to Slack
 
-  sendSlackNotification(trace);
-  return { success: true, message: "Stacktrace logged" };
+  const slackReport = generateSlackReport(crashReason, "empty", "empty");
+  sendSlackNotification(slackReport);
+  return { success: true, message: "Incident processed" };
 }
 
-module.exports = { logIncident: processIncident };
+function getPromptForCrashReason(stacktrace) {
+  return `
+  You are a helpful assistant that analyzes stack traces and provides a summary of the crash reason.
+  Be concise but detailed.
+  The stack trace is: ${stacktrace}
+  `;
+}
+
+function generateSlackReport(crashReason, commitHistory, topCommitters) {
+  return `
+  *Crash Reason*: ${crashReason}
+  *Commit History*: ${commitHistory}
+  *Top Committers*: ${topCommitters}
+  `;
+}
+
+module.exports = { processIncident: processIncident };

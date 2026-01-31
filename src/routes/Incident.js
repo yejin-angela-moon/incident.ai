@@ -1,5 +1,5 @@
 const express = require("express");
-const { logIncident } = require("../controllers/IncidentController");
+const { processIncident } = require("../controllers/IncidentController");
 
 const incidentRouter = express.Router();
 
@@ -9,10 +9,10 @@ const incidentRouter = express.Router();
  *
  * Body: { stacktrace: string }
  */
-incidentRouter.post("/", (req, res, next) => {
+incidentRouter.post("/", async (req, res, next) => {
   try {
     const { stacktrace } = req.body;
-    const result = logIncident(stacktrace);
+    const result = await processIncident(stacktrace);
     res.status(200).json(result);
   } catch (error) {
     next(error);

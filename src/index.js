@@ -20,7 +20,7 @@ app.use("/api", apiRouter);
 
 // Unknown route handler
 app.use((req, res, next) => {
-  next(new HttpError(404, "Not Found"));
+  next(new HttpError(404, `Route ${req.originalUrl} not found`));
 });
 
 app.use(errorHandler);
