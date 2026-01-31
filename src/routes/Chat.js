@@ -7,9 +7,9 @@ const chatRouter = express.Router();
 chatRouter.post("/", async (req, res, next) => {
   try {
     const { prompt } = req.body;
-    
+
     // Using a default model
-    const model = anthropic("claude-3-5-sonnet-20240620");
+    const model = anthropic("claude-3-haiku-20240307");
 
     const { text } = await generateText({
       model: model,

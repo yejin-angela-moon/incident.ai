@@ -4,14 +4,17 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "test": "node run-tests.js",
+    "start": "node --env-file=.env src/index.js",
+    "dev": "nodemon --env-file=.env src/index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@slack/webhook": "^7.0.6",
+    "axios": "^1.13.4",
+    "dotenv": "^17.2.3",
     "@ai-sdk/anthropic": "^3.0.33",
     "ai": "^6.0.64",
     "express": "^5.2.1",

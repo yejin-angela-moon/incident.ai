@@ -14,4 +14,8 @@ testRouter.get("/async-throw", async (req, res, next) => {
   throw new HttpError(500, "This is an async test error.");
 });
 
+testRouter.get("/env", (req, res) => {
+  res.json({ testVar: process.env.TEST_VAR || "Cannot find TEST_VAR" });
+});
+
 module.exports = testRouter;
