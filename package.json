@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@slack/webhook": "^7.0.6",
     "express": "^5.2.1",
     "nodemon": "^3.1.11"
   }
