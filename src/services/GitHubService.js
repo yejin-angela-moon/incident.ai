@@ -208,9 +208,109 @@ function parseRawDiff(rawDiff) {
   return files;
 }
 
+/**
+ * Get the top N commits for a specific file with their diffs
+ * @param {string} owner - GitHub repository owner
+ * @param {string} repo - GitHub repository name
+ * @param {string} filePath - Path to the file in the repository
+ * @param {number} count - Number of commits to fetch (default: 3)
+ * @returns {Promise<Array>} Array of commits with their diffs for the specific file
+ */
+async function getTopCommitsWithDiffs(owner, repo, filePath, count = 3) {
+  try {
+    // Get the top N commits for this file
+    const commits = await getFileCommitHistory(owner, repo, filePath, count);
+
+    // Fetch detailed changes for each commit
+    const commitsWithDiffs = await Promise.all(
+      commits.map(async (commit) => {
+        const details = await getCommitDetails(owner, repo, commit.sha);
+
+        // Find the specific file's changes in this commit
+        const fileChange = details.filesChanged.find(
+          (file) => file.filename === filePath
+        );
+
+        return {
+          sha: commit.sha,
+          shortSha: commit.shortSha,
+          message: commit.message,
+          author: commit.author,
+          email: commit.email,
+          date: commit.date,
+          url: commit.url,
+          diff: fileChange ? fileChange.patch : null,
+          additions: fileChange ? fileChange.additions : 0,
+          deletions: fileChange ? fileChange.deletions : 0,
+          status: fileChange ? fileChange.status : 'unknown',
+        };
+      })
+    );
+
+    return commitsWithDiffs;
+  } catch (error) {
+    throw new Error(`Failed to fetch commits with diffs for ${filePath}: ${error.message}`);
+  }
+}
+
+/**
+ * Get the top authors for a specific file based on commit count
+ * @param {string} owner - GitHub repository owner
+ * @param {string} repo - GitHub repository name
+ * @param {string} filePath - Path to the file in the repository
+ * @param {number} commitCount - Number of commits to analyze (default: 100)
+ * @param {number} topN - Number of top authors to return (default: 3)
+ * @returns {Promise<Array>} Array of top authors with their commit counts
+ */
+async function getTopAuthorsForFile(owner, repo, filePath, commitCount = 100, topN = 3) {
+  try {
+    const commits = await getFileCommitHistory(owner, repo, filePath, commitCount);
+
+    // Count commits per author
+    const authorCommitCount = {};
+
+    commits.forEach((commit) => {
+      const authorKey = commit.author;
+      if (authorCommitCount[authorKey]) {
+        authorCommitCount[authorKey].commitCount++;
+        authorCommitCount[authorKey].commits.push({
+          sha: commit.shortSha,
+          message: commit.message.split('\n')[0], // First line only
+          date: commit.date,
+        });
+      } else {
+        authorCommitCount[authorKey] = {
+          author: commit.author,
+          email: commit.email,
+          commitCount: 1,
+          commits: [{
+            sha: commit.shortSha,
+            message: commit.message.split('\n')[0],
+            date: commit.date,
+          }],
+        };
+      }
+    });
+
+    // Convert to array and sort by commit count
+    const sortedAuthors = Object.values(authorCommitCount)
+      .sort((a, b) => b.commitCount - a.commitCount)
+      .slice(0, topN);
+
+    return {
+      totalCommitsAnalyzed: commits.length,
+      topAuthors: sortedAuthors,
+    };
+  } catch (error) {
+    throw new Error(`Failed to fetch top authors: ${error.message}`);
+  }
+}
+
 module.exports = {
   getFileCommitHistory,
   getCommitDetails,
   getCommitDiff,
   getFileDiffHistory,
+  getTopAuthorsForFile,
+  getTopCommitsWithDiffs,
 };
