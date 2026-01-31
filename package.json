@@ -12,6 +12,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.33",
+    "ai": "^6.0.64",
     "express": "^5.2.1",
     "nodemon": "^3.1.11"
   }
