@@ -1,4 +1,5 @@
 from pathlib import Path
+import altair as alt
 import pandas as pd
 import streamlit as st
 
@@ -112,6 +113,32 @@ if error_filter:
         .str.contains(error_filter, case=False, na=False)
     ]
 
+# Incidents over time line chart
+st.subheader("Incidents Over Time")
+if len(filtered) > 0 and filtered["timestamp_dt"].notna().any():
+    # Group by date and count incidents
+    chart_data = filtered[filtered["timestamp_dt"].notna()].copy()
+    chart_data["date"] = chart_data["timestamp_dt"].dt.date
+    daily_counts = chart_data.groupby("date").size().reset_index(name="incidents")
+    daily_counts["date"] = pd.to_datetime(daily_counts["date"])
+    daily_counts = daily_counts.sort_values("date")
+    
+    # Create line chart using Altair for integer y-axis
+    chart = (
+        alt.Chart(daily_counts)
+        .mark_line(point=True)
+        .encode(
+            x=alt.X("date:T", title="Date"),
+            y=alt.Y("incidents:Q", title="Incidents", axis=alt.Axis(tickMinStep=1)),
+            tooltip=["date:T", "incidents:Q"],
+        )
+        .properties(height=300)
+    )
+    st.altair_chart(chart, use_container_width=True)
+else:
+    st.info("No timestamp data available for chart.")
+
+st.divider()
 
 # Helper for pluralization
 def pluralize(count, singular, plural=None):
