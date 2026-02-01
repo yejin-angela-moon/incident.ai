@@ -125,7 +125,7 @@ async function generateSlackReport(appName, crashReasonData) {
   *App Name*: ${appName}
   *Crash Summary*: ${summary}
   *Crash Report*: ${crashReasonData.crashReport}
-  *Commit History*: ${claudeInterpretedHistory.data.response}
+  *Recent Commit History*: ${claudeInterpretedHistory.data.response}
   *─────────────────────────────────────--*
   `;
 }
