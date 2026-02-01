@@ -110,8 +110,8 @@ async function generateSlackReport(appName, crashReasonData) {
   const commitHistory = [];
   for (const file of files) {
     const history = await getTopCommitsWithDiffs(
-      "yejin-angela-moon",
-      "ichack26",
+      "raffaelli28",
+      "broken_app",
       file,
     );
     commitHistory.push(history);
@@ -209,16 +209,21 @@ async function generateSlackReport(appName, crashReasonData) {
   *App Name*: ${appName}
   *Crash Summary*: ${summary}
   *Crash Report*: ${crashReasonData.crashReport}
-  *Recent Commit History*: ${claudeInterpretedHistory.data.response}
+
+  *Recent Commit History (${files.join(", ")})*: ${claudeInterpretedHistory.data.response}
   *─────────────────────────────────────--*
   `;
 }
 
 function getPromptForInterpretedHistory(commitHistoryOutput) {
   return `Given the following commit history and diffs, summarize the changes that might have led to the crash,
-  Give your output in a list format, as a Slack message, where each entry has the commit message, author, 
-  date, and a brief explanation of the changes in that commit.
+  Give your output in a list format, as a Slack message, where each entry has the following:
+  - the commit message
+  - author
+  - date
+  - a brief explanation of the changes in that commit.
 
+  This is the commit history and diffs:
   ${commitHistoryOutput}
   `;
 }

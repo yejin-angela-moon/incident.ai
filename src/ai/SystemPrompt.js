@@ -28,7 +28,7 @@ const exampleStackTrace = `{
   "error": {
     "name": "ReferenceError",
     "message": "token is not defined",
-    "stack": "ReferenceError: token is not defined\\n    at file:///Users/moony/fourth_year/ICHACK/broken_app/package.json:25:24\\n    
+    "stack": "ReferenceError: token is not defined\\n    at /Users/moony/fourth_year/ICHACK/broken_app/src/routes/api.js:25:24\\n    
   }
 }`;
 

@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const { addRequestId, errorHandler } = require("./middleware/Logs");
 const { HttpError } = require("./util/HttpError");

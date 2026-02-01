@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "node run-tests.js",
-    "start": "node --env-file=.env src/index.js",
-    "dev": "nodemon --env-file=.env src/index.js",
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
     "dashboard": "streamlit run dashboard.py"
   },
   "keywords": [],
