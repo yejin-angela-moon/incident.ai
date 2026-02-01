@@ -5,7 +5,8 @@ Return your information in VALID JSON format with the following fields:
 - "errorType": The type of error (e.g., ReferenceError, TypeError).
 - "errorMessage": The error message.
 - "files": An array of file names with full paths involved in the error.
-- "methods": An array of method names involved in the error.
+- "topFrame": The top frame of the stack trace indicating where the error originated.
+- "lineNumber": The line number in the top frame where the error occurred.
 
 IMPORTANT:
 - Output MUST be valid, parseable JSON.
